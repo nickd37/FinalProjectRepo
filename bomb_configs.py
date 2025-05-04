@@ -120,24 +120,45 @@ def genSerial():
 
     return serial, toggle_value, jumper_value
 
-# generates the keypad combination from a keyword and rotation key
+# Riddles and their answers
+# The answers will need to be shifted 5 spaces to the right
+# Each answer should be a single word
+riddles = {
+    "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?": "ECHO",
+    "The more you take, the more you leave behind. What am I?": "STEPS",
+    "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?": "MAP",
+    "What has keys but can't open locks?": "PIANO",
+    "What can travel around the world while staying in a corner?": "STAMP",
+    "What has a head and a tail but no body?": "COIN",
+    "What is full of holes but still holds water?": "SPONGE",
+    "What goes up but never comes down?": "AGE",
+    "What has many keys but can't open a single lock?": "KEYBOARD",
+    "What runs but never walks, has a mouth but never talks?": "RIVER",
+}
+
+# Caesar cipher (shift right by 5 positions)
+def caesar_cipher(text, shift):
+    result = ""
+    for char in text:
+        if char.isalpha():
+            # Convert to 0-25 range
+            char_code = ord(char.upper()) - ord('A')
+            # Shift
+            shifted_code = (char_code + shift) % 26
+            # Convert and append
+            result += chr(shifted_code + ord('A'))
+        else:
+            result += char
+    return result
+
+# generates the keypad combination from the riddle given
 def genKeypadCombination():
-    # encrypts a keyword using a rotation cipher
-    def encrypt(keyword, rot):
-        cipher = ""
-
-        # encrypt each letter of the keyword using rot
-        for c in keyword:
-            cipher += chr((ord(c) - 65 + rot) % 26 + 65)
-
-        return cipher
-
     # returns the keypad digits that correspond to the passphrase
     def digits(passphrase):
         combination = ""
         keys = [ None, None, "ABC", "DEF", "GHI", "JKL", "MNO", "PRS", "TUV", "WXY" ]
 
-        # process each character of the keyword
+        # go thru each character
         for c in passphrase:
             for i, k in enumerate(keys):
                 if (k and c in k):
@@ -146,33 +167,19 @@ def genKeypadCombination():
 
         return combination
 
-    # the list of keywords and matching passphrases
-    keywords = { "BANDIT": "RIVER",\
-                 "BUCKLE": "FADED",\
-                 "CANOPY": "FOXES",\
-                 "DEBATE": "THROW",\
-                 "FIERCE": "TRICK",\
-                 "GIFTED": "CYCLE",\
-                 "IMPACT": "STOLE",\
-                 "LONELY": "TOADY",\
-                 "MIGHTY": "ALOOF",\
-                 "NATURE": "CARVE",\
-                 "REBORN": "CLIMB",\
-                 "RECALL": "FEIGN",\
-                 "SYSTEM": "LEAVE",\
-                 "TAKING": "SPINY",\
-                 "WIDELY": "BOUND",\
-                 "ZAGGED": "YACHT" }
-    # the rotation cipher key
-    rot = randint(1, 25)
-
-    # pick a keyword and matching passphrase
-    keyword, passphrase = choice(list(keywords.items()))
-    # encrypt the passphrase and get its combination
-    cipher_keyword = encrypt(keyword, rot)
-    combination = digits(passphrase)
-
-    return keyword, cipher_keyword, rot, combination, passphrase
+    # Select a random riddle and its answer
+    riddle_text, answer = choice(list(riddles.items()))
+    
+    # Apply Caesar cipher to the answer (shift 5 spaces right)
+    shift = 5
+    cipher_answer = caesar_cipher(answer, shift)
+    
+    # Get the keypad combination
+    combination = digits(cipher_answer)
+    
+    original_answer = answer
+    
+    return riddle_text, original_answer, cipher_answer, shift, combination
 
 ###############################
 # generate the bomb's specifics
@@ -183,13 +190,13 @@ def genKeypadCombination():
 #  wires_target: the wires phase defuse value
 serial, toggles_target, wires_target = genSerial()
 
-# generate the combination for the keypad phase
-#  keyword: the plaintext keyword for the lookup table
-#  cipher_keyword: the encrypted keyword for the lookup table
-#  rot: the key to decrypt the keyword
-#  keypad_target: the keypad phase defuse value (combination)
-#  passphrase: the target plaintext passphrase
-keyword, cipher_keyword, rot, keypad_target, passphrase = genKeypadCombination()
+# generate the riddle and combination for the keypad phase
+#  riddle_text: the riddle to be solved
+#  original_answer: the plain answer to the riddle
+#  cipher_answer: the answer after shifting 5 places right
+#  shift: the shift value (always 5)
+#  keypad_target: the keypad phase defuse value (combination of digits)
+riddle_text, original_answer, cipher_answer, shift, keypad_target = genKeypadCombination()
 
 # generate the color of the pushbutton (which determines how to defuse the phase)
 button_color = choice(["R", "G", "B"])
@@ -206,7 +213,10 @@ if (DEBUG):
     print(f"Serial number: {serial}")
     print(f"Toggles target: {bin(toggles_target)[2:].zfill(4)}/{toggles_target}")
     print(f"Wires target: {bin(wires_target)[2:].zfill(5)}/{wires_target}")
-    print(f"Keypad target: {keypad_target}/{passphrase}/{keyword}/{cipher_keyword}(rot={rot})")
+    print(f"Riddle: {riddle_text}")
+    print(f"Answer: {original_answer}")
+    print(f"Cipher Answer (shift {shift}): {cipher_answer}")
+    print(f"Keypad target: {keypad_target}")
     print(f"Button target: {button_target}")
 
 # set the bomb's LCD bootup text
@@ -215,8 +225,10 @@ boot_text = f"Booting...\n\x00\x00"\
             f"Initializing subsystems...\n\x00"\
             f"*System model: 102BOMBv4.2\n"\
             f"*Serial number: {serial}\n"\
-            f"Encrypting keypad...\n\x00"\
-            f"*Keyword: {cipher_keyword}; key: {rot}\n"\
+            f"Loading security module...\n\x00"\
+            f"*RIDDLE AUTHENTICATION REQUIRED\n"\
+            f"*RIDDLE: {riddle_text}\n"\
+            f"*ANSWER MUST BE SHIFTED 5 SPACES RIGHT\n"\
             f"*{' '.join(ascii_uppercase)}\n"\
             f"*{' '.join([str(n % 10) for n in range(26)])}\n"\
             f"Rendering phases...\x00"
