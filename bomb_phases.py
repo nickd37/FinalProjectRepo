@@ -366,17 +366,47 @@ class Button(PhaseThread):
 class Toggles(PhaseThread):
     def __init__(self, component, target, name="Toggles"):
         super().__init__(name, component, target)
+        # Initialize value to store the current state of the toggles
+        self._value = [False, False, False, False]
+        # Set our target pattern, toggles 0 and 2 should be on (1, 0, 1, 0)
+        self._target_pattern = [True, False, True, False]
 
     # runs the thread
     def run(self):
-        # TODO
-        pass
+        self._running = True
+        # Track for wrong pattern
+        already_failed = False
+        
+        while (self._running):
+            # Store previous state
+            prev_state = self._value.copy()
+            
+            # Read the current state of each toggle
+            for i in range(len(self._component)):
+                # Toggle is ON if pin = True
+                self._value[i] = self._component[i].value
+            
+            # Check if the toggle changed
+            if prev_state != self._value:
+                
+                # Check if the current pattern matches our target pattern (1, 0, 1, 0)
+                if self._value == self._target_pattern:
+                    self._defused = True
+                # Only register a strike once
+                elif not already_failed and any(self._value):
+                    self._failed = True
+                    already_failed = True
+                elif not any(self._value):
+                    already_failed = False
+                    
+            sleep(0.1)
 
-    # returns the toggle switches state as a string
+    # returns the toggle switches state
     def __str__(self):
         if (self._defused):
             return "DEFUSED"
         else:
-            # TODO
-            pass
-
+            toggle_state = ""
+            for i, state in enumerate(self._value):
+                toggle_state += f"{i+1}:{'ON' if state else 'OFF'} "
+            return f"Pattern: {toggle_state.strip()}"
