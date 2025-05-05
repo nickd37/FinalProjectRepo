@@ -229,20 +229,88 @@ class Keypad(PhaseThread):
 class Wires(PhaseThread):
     def __init__(self, component, target, name="Wires"):
         super().__init__(name, component, target)
+        # Initialize a 5-letter word with missing letters
+        self._word_choices = ["BOMBS", "FUSES", "WIRED", "TICKS", "CLOCK", "TIMER"]
+        self._word = choice(self._word_choices)
+        
+        # Generate a pattern based on the target value which is wires_target in binary
+        self._pattern = bin(self._target)[2:].zfill(5)
+        
+        # Create the word with missing letters where wires should be cut
+        self._display_word = ""
+        for i in range(5):
+            if self._pattern[i] == '0':
+                self._display_word += "_"
+            else:
+                self._display_word += self._word[i]
+        
+        # Initialize value to represent the state of the wires
+        # True means wire is intact, False means wire is cut
+        self._value = [True, True, True, True, True]
+        
+        # Prevent multiple strikes for the same wire
+        self._wrong_cuts = set()
 
-    # runs the thread
     def run(self):
-        # TODO
-        pass
+        self._running = True
+        # Track the initial state of the wires
+        initial_check_done = False
+        
+        while (self._running):
+            # Store previous state to detect changes
+            prev_state = self._value.copy()
+            
+            # Check the state of each wire
+            for i in range(len(self._component)):
+                # Wire is cut if the pin = True
+                self._value[i] = not self._component[i].value
+            
+            if not initial_check_done:
+                initial_check_done = True
+                sleep(0.5)
+                continue
+            
+            # Check if wire state changed
+            if prev_state != self._value:
+                for i in range(5):
+                    if prev_state[i] and not self._value[i]:
+                        # If pattern has '1', this wire will be cut
+                        # If pattern has '0', this wire should not be cut 
+                        if self._pattern[i] == '1':
+                            if i not in self._wrong_cuts:
+                                self._wrong_cuts.add(i)
+                                self._failed = True
+            
+            # Check if the phase is defused
+            if self._check_defused():
+                self._defused = True
+                            
+            sleep(0.1)
 
-    # returns the jumper wires state as a string
+    # Check if the phase is defused 
+    def _check_defused(self):
+        for i in range(5):
+            # If pattern has '1', the wire should be cut
+            if self._pattern[i] == '1':
+                if self._value[i]:
+                    return False
+            # If pattern has '0', the wire should not be cut
+            else:
+                if not self._value[i]:
+                    return False
+        return True
+
+    # Returns the jumper wires state
     def __str__(self):
         if (self._defused):
             return "DEFUSED"
         else:
-            # TODO
-            pass
-
+            # Show the puzzle word and the current state of wires
+            wire_state = ""
+            for i, state in enumerate(self._value):
+                wire_state += f"{i+1}:{'I' if state else 'C'} "
+            return f"Word: {self._display_word} | {wire_state.strip()}"
+        
 # the pushbutton phase
 class Button(PhaseThread):
     def __init__(self, component_state, component_rgb, target, color, timer, name="Button"):
@@ -311,3 +379,4 @@ class Toggles(PhaseThread):
         else:
             # TODO
             pass
+
