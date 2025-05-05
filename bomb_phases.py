@@ -321,52 +321,64 @@ class Wires(PhaseThread):
 class Button(PhaseThread):
     def __init__(self, component_state, component_rgb, target, color, timer, name="Button"):
         super().__init__(name, component_state, target)
-        # the default value is False/Released
+        # the default value is False
         self._value = False
-        # has the pushbutton been pressed?
         self._pressed = False
-        # we need the pushbutton's RGB pins to set its color
+        # store the number of presses
+        self._press_count = 0
         self._rgb = component_rgb
-        # the pushbutton's randomly selected LED color
+        # the button randomly selects a color
         self._color = color
-        # we need to know about the timer (7-segment display) to be able to determine correct pushbutton releases in some cases
         self._timer = timer
+        # determine required number of presses based on color
+        if self._color == "R":
+            self._required_presses = 3
+        elif self._color == "B":
+            self._required_presses = 4
+        elif self._color == "G":
+            self._required_presses = 5
+        else:
+            self._required_presses = 3  # Default fallback
 
     # runs the thread
     def run(self):
         self._running = True
-        # set the RGB LED color
+        # set the LED color
         self._rgb[0].value = False if self._color == "R" else True
         self._rgb[1].value = False if self._color == "G" else True
         self._rgb[2].value = False if self._color == "B" else True
+        
+        # Track button release
+        button_was_pressed = False
+        
         while (self._running):
-            # get the pushbutton's state
+            # get the button's state
             self._value = self._component.value
-            # it is pressed
+            
+            # Button is pressed
             if (self._value):
-                # note it
-                self._pressed = True
-            # it is released
-            else:
-                # was it previously pressed?
-                if (self._pressed):
-                    # check the release parameters
-                    # for R, nothing else is needed
-                    # for G or B, a specific digit must be in the timer (sec) when released
-                    if (not self._target or self._target in self._timer._sec):
-                        self._defused = True
-                    else:
-                        self._failed = True
-                    # note that the pushbutton was released
-                    self._pressed = False
+                button_was_pressed = True
+            # Button is released
+            elif button_was_pressed:
+                self._press_count += 1
+                button_was_pressed = False
+                
+                # Check if reached the required number of presses
+                if self._press_count == self._required_presses:
+                    self._defused = True
+                elif self._press_count > self._required_presses:
+                    self._failed = True
+                    self._press_count = 0
+                    
             sleep(0.1)
 
-    # returns the pushbutton's state as a string
+    # returns the button's state
     def __str__(self):
         if (self._defused):
             return "DEFUSED"
         else:
-            return str("Pressed" if self._value else "Released")
+            state = "Pressed" if self._value else "Released"
+            return f"{state} | Presses: {self._press_count}"
 
 # the toggle switches phase
 class Toggles(PhaseThread):
