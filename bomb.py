@@ -100,7 +100,7 @@ def check_phases():
         # the phase has failed -> strike
         elif (wires._failed):
             strike()
-            # reset the wires
+            # reset the wires failure flag so we don't trigger multiple strikes
             wires._failed = False
     # check the button
     if (button._running):
@@ -149,13 +149,17 @@ def check_phases():
 
     # check the phases again after a slight delay
     gui.after(100, check_phases)
-
 # handles a strike
 def strike():
-    global strikes_left
-    
+    global strikes_left, timer
+
     # note the strike
     strikes_left -= 1
+
+    # subtract 10 seconds from the timer, but don't go below zero
+    timer._value = max(0, timer._value - 10)
+    timer._update()  # refresh the timer's minutes/seconds
+
 
 # turns off the bomb
 def turn_off():
