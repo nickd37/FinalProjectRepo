@@ -124,9 +124,9 @@ def genSerial():
 # The answers will need to be shifted 5 spaces to the right
 # Each answer should be a single word
 riddles = {
-    "I speak without a mouth and hear without ears. I have no body, but I come alive with wind. What am I?": "ECHO",
+    "I speak without a mouth and hear without ears. \n I have no body, but I come alive with wind. What am I?": "ECHO",
     "The more you take, the more you leave behind. What am I?": "STEPS",
-    "I have cities, but no houses. I have mountains, but no trees. I have water, but no fish. What am I?": "MAP",
+    "I have cities, but no houses. I have \n mountains, but no trees. I have water, but no fish. What am I?": "MAP",
     "What has keys but can't open locks?": "PIANO",
     "What can travel around the world while staying in a corner?": "STAMP",
     "What has a head and a tail but no body?": "COIN",
@@ -225,7 +225,6 @@ boot_text = f"Booting...\n\x00\x00"\
             f"Initializing subsystems...\n\x00"\
             f"*System model: 102BOMBv4.2\n"\
             f"*Serial number: {serial}\n"\
-            f"Loading security module...\n\x00"\
             f"*RIDDLE AUTHENTICATION REQUIRED\n"\
             f"*RIDDLE: {riddle_text}\n"\
             f"*ANSWER MUST BE SHIFTED 5 SPACES RIGHT\n"\
