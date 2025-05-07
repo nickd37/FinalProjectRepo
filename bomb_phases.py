@@ -13,6 +13,8 @@ from threading import Thread
 from time import sleep
 import os
 import sys
+import pygame
+
 
 #########
 # classes
@@ -98,7 +100,20 @@ class Lcd(Frame):
         self._result_text = "BOMB DEFUSED!" if success else "YOU BLEW UP!!!"
         self._lresult = Label(self, bg="black", fg="#00ff00" if success else "#ff0000", font=("Courier New", 48, "bold"), text=self._result_text)
         self._lresult.grid(row=0, column=0, columnspan=3, pady=40, sticky="nsew")
-    
+        if success:
+            pygame.init()
+            pygame.mixer.music.load("./Victory sound.mp3")
+            pygame.mixer.music.play(1)
+        else:
+            image_path = "./bomb explosion.png" 
+            image = PhotoImage(file=image_path)
+            self._image_label = Label(self, bg="black", image=image)
+            self._image_label.image = image  
+            self._image_label.grid(row=1, column=0, columnspan=3, pady=5, sticky="nsew")
+            pygame.init()
+            pygame.mixer.music.load("./Explosion sound.wav")
+            pygame.mixer.music.play(1)
+            
         #Add an empty row for spacing
         self.rowconfigure(1, minsize=50)
         
