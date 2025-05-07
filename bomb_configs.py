@@ -1,7 +1,7 @@
 #################################
 # CSC 102 Defuse the Bomb Project
 # Configuration file
-# Team: 
+# Team: Nicholas Dobrzycki, Vincent DePalo, Jay Briskin
 #################################
 
 # constants
